@@ -201,6 +201,8 @@ async function loadArticleForEdit(articleId) {
 async function submitEditArticle() {
   const form = document.getElementById("editArticleForm")
   const formData = new FormData(form)
+  if(!await requireAuth()) return;
+  formData.set("csrf_token",authSession.csrfToken)
 
   fetch(API_BASE + "update_article.php", {
     method: "POST",

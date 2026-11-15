@@ -1,3 +1,15 @@
+# NewsHub — React + Supabase (Live Frontend)
+
+**Current implementation:** [React app in `web/`](web/README.md) · [Vercel Production](https://newshub-torray.vercel.app)
+
+The original PHP/MySQL implementation remains at repository root for coursework history. **For free Vercel hosting use `web/`**, not the legacy PHP endpoints.
+
+**Data migration:** schema and access rules moved to Supabase `torray-workspace`; NewsHub has no MySQL export, so historical local articles have **not** been imported. The `newshub_articles` table starts empty. Login uses Supabase Auth; NEWSHUB owner/editor roles are provisioned in `app_memberships`.
+
+---
+
+## Legacy PHP reference (not the deployed application)
+
 # NewsHub — Article Management Studio
 
 A modernized article-management project built from the original PHP/MySQL coursework.

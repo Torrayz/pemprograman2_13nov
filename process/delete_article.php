@@ -1,28 +1,17 @@
 <?php
-include "koneksi.php";
-
-header('Content-Type: application/json');
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $data = json_decode(file_get_contents("php://input"), true);
-    $articleID = escape_string($data['articleID'] ?? '');
-
-    // Validation
-    if (empty($articleID)) {
-        echo json_encode(['success' => false, 'message' => 'ID artikel tidak diberikan']);
-        exit;
-    }
-
-    $query = "DELETE FROM articles WHERE articleID='$articleID'";
-
-    if (mysqli_query($conn, $query)) {
-        echo json_encode(['success' => true, 'message' => 'Artikel berhasil dihapus']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Error: ' . mysqli_error($conn)]);
-    }
-} else {
-    echo json_encode(['success' => false, 'message' => 'Method tidak diizinkan']);
+require_once __DIR__ . '/koneksi.php';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') json_response(['success' => false, 'message' => 'Method tidak diizinkan.'], 405);
+require_admin();
+$data = json_decode(file_get_contents('php://input'), true);
+$id = filter_var($data['articleID'] ?? null, FILTER_VALIDATE_INT);
+if (!$id || $id < 1) json_response(['success' => false, 'message' => 'ID tidak valid.'], 422);
+try {
+    $stmt = $conn->prepare('DELETE FROM articles WHERE articleID=?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    if ($stmt->affected_rows === 0) json_response(['success' => false, 'message' => 'Artikel tidak ditemukan.'], 404);
+    json_response(['success' => true, 'message' => 'Artikel dihapus.']);
+} catch (mysqli_sql_exception $error) {
+    error_log($error->getMessage());
+    json_response(['success' => false, 'message' => 'Gagal menghapus artikel.'], 500);
 }
-
-mysqli_close($conn);
-?>

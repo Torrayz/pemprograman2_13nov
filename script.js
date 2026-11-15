@@ -1,5 +1,8 @@
 // Article Management System
 const API_BASE = "process/"
+let authSession = {authenticated:false,csrfToken:""};
+async function refreshAuth(){try{const response=await fetch(API_BASE+"session.php",{credentials:"same-origin"});authSession=await response.json()}catch{authSession={authenticated:false,csrfToken:""}}return authSession}
+async function requireAuth(){const auth=await refreshAuth();if(!auth.authenticated){alert("Login admin diperlukan untuk mengubah artikel.");window.location.href=API_BASE+"login.php";return false}return true}
 
 // Load articles on page load
 document.addEventListener("DOMContentLoaded", () => {
@@ -102,7 +105,7 @@ function createArticleCard(article) {
                 <a href="edit-article.html?id=${article.articleID}" class="article-edit">
                     <span>✎</span> Edit
                 </a>
-                <button class="article-delete" onclick="openDeleteModal(${article.articleID}, '${escapeHtml(article.judul)}')">
+                <button class="article-delete" onclick="openDeleteModal(${Number(article.articleID)})">
                     <span>🗑</span> Hapus
                 </button>
             </div>
@@ -139,9 +142,11 @@ function escapeHtml(text) {
 }
 
 // Submit new article
-function submitArticle() {
+async function submitArticle() {
   const form = document.getElementById("articleForm")
   const formData = new FormData(form)
+  if(!await requireAuth()) return;
+  formData.set("csrf_token",authSession.csrfToken)
 
   fetch(API_BASE + "add_article.php", {
     method: "POST",
@@ -163,8 +168,9 @@ function submitArticle() {
 }
 
 // Load article for editing
-function loadArticleForEdit(articleId) {
-  fetch(API_BASE + "get_article.php?id=" + articleId)
+async function loadArticleForEdit(articleId) {
+  if(!await requireAuth()) return;
+  fetch(API_BASE + "get_article.php?id=" + encodeURIComponent(articleId))
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
@@ -192,7 +198,7 @@ function loadArticleForEdit(articleId) {
 }
 
 // Submit edited article
-function submitEditArticle() {
+async function submitEditArticle() {
   const form = document.getElementById("editArticleForm")
   const formData = new FormData(form)
 
@@ -243,13 +249,16 @@ document.addEventListener("DOMContentLoaded", () => {
 })
 
 // Delete article
-function deleteArticle(articleId) {
+async function deleteArticle(articleId) {
+  if(!await requireAuth()) return;
   fetch(API_BASE + "delete_article.php", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ articleID: articleId }),
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "X-CSRF-Token": authSession.csrfToken },
   })
     .then((response) => response.json())
     .then((data) => {

@@ -1,18 +1,9 @@
 <?php
-include "koneksi.php";
-
-header('Content-Type: application/json');
-
-$query = "SELECT articleID, judul, penulis, lead, content, waktu FROM articles ORDER BY articleID DESC";
-$result = mysqli_query($conn, $query);
-
-$articles = [];
-if (mysqli_num_rows($result) > 0) {
-    while ($row = mysqli_fetch_assoc($result)) {
-        $articles[] = $row;
-    }
+require_once __DIR__ . '/koneksi.php';
+try {
+    $result = $conn->query('SELECT articleID, judul, penulis, lead, content, waktu FROM articles ORDER BY waktu DESC LIMIT 100');
+    json_response(['success' => true, 'articles' => $result->fetch_all(MYSQLI_ASSOC)]);
+} catch (mysqli_sql_exception $error) {
+    error_log($error->getMessage());
+    json_response(['success' => false, 'message' => 'Gagal memuat artikel.'], 500);
 }
-
-echo json_encode(['success' => true, 'articles' => $articles]);
-mysqli_close($conn);
-?>

@@ -1,22 +1,15 @@
 <?php
-include "koneksi.php";
-
-header('Content-Type: application/json');
-
-if (isset($_GET['id'])) {
-    $articleID = escape_string($_GET['id']);
-    $query = "SELECT * FROM articles WHERE articleID = '$articleID'";
-    $result = mysqli_query($conn, $query);
-
-    if (mysqli_num_rows($result) > 0) {
-        $article = mysqli_fetch_assoc($result);
-        echo json_encode(['success' => true, 'article' => $article]);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Artikel tidak ditemukan']);
-    }
-} else {
-    echo json_encode(['success' => false, 'message' => 'ID artikel tidak diberikan']);
+require_once __DIR__ . '/koneksi.php';
+$id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+if (!$id || $id < 1) json_response(['success' => false, 'message' => 'ID tidak valid.'], 422);
+try {
+    $stmt = $conn->prepare('SELECT articleID, judul, penulis, lead, content, waktu FROM articles WHERE articleID=?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $article = $stmt->get_result()->fetch_assoc();
+    if (!$article) json_response(['success' => false, 'message' => 'Artikel tidak ditemukan.'], 404);
+    json_response(['success' => true, 'article' => $article]);
+} catch (mysqli_sql_exception $error) {
+    error_log($error->getMessage());
+    json_response(['success' => false, 'message' => 'Gagal memuat artikel.'], 500);
 }
-
-mysqli_close($conn);
-?>
